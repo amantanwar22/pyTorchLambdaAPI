@@ -18,12 +18,11 @@ Cross-Platform Consistency: Docker ensures the code runs on AWS (Linux/AMD64) ex
 
 ## 3. Building the PyTorch Image (Docker Method)
 
-Step 1 — Create Project Files
-Create a folder and add the following two files.
+### Step 1 — Prepare Project Files
+Ensure you have the `app.py` and `Dockerfile` from this repository in your local folder.
 
-File 1: app.py
-
-File 2: Dockerfile
+* **`app.py`**: Contains the Lambda handler and PyTorch inference logic.
+* **`Dockerfile`**: Defines the system environment.
 
 Step 2 — Build the Image (Mac/Cross-Platform Fix)
 
