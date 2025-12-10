@@ -25,6 +25,7 @@ aws configure
 Paste your keys when prompted. For the region, type ap-south-1.
 
 ## Building the Project
+
 First, create a folder on your Desktop named pytorch-lambda. Download the app.py and Dockerfile from this repository and place them inside that folder.
 
 Open PowerShell and navigate to your new folder:
@@ -59,10 +60,10 @@ docker tag pytorch-lambda:latest YOUR_URI:latest
 
 Upload it to the cloud:
 
-
 docker push YOUR_URI:latest
 
 ## Creating the Lambda Function
+
 Now that your code is online, let's turn it into a working API.
 
 Go to the AWS Console and search for Lambda. Click Create Function and select the Container Image option.
@@ -70,6 +71,7 @@ Go to the AWS Console and search for Lambda. Click Create Function and select th
 Name it pytorch-api. Click the Browse Images button, select the repository you just created, and choose the image tagged latest. Be sure to set the Architecture to x86_64 so it matches our build. Finally, click Create function.
 
 ## The Final Step: Making it Public
+
 To share this with the world, we need a public link.
 
 In your new Lambda function, go to the Configuration tab and select Function URL from the left menu. Click Create function URL, set the Auth type to NONE (this makes it public), and save it.
