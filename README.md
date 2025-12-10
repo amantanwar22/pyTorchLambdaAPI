@@ -1,79 +1,80 @@
 # AWS Lambda + PyTorch (Container Image Method) + Parameterized API
 
-URL - https://xn4qvsoz7st5oog64jd2pdhl2y0sxmzf.lambda-url.ap-south-1.on.aws/ 
+Live Demo URL - https://xn4qvsoz7st5oog64jd2pdhl2y0sxmzf.lambda-url.ap-south-1.on.aws/
 
-## 1. Objective
+## What We Are Building
 
-The goal of this task was to successfully run PyTorch inside AWS Lambda. Because PyTorch is extremely large (>700MB) and requires system-level math libraries, it cannot be loaded as a standard Lambda Layer (which has a 250MB limit).
+We are running PyTorch inside AWS Lambda. Usually, this is tricky because PyTorch is a massive library (over 700MB) and Lambda has strict size limits.
 
-Instead, we used the Lambda Container Image method, packaging the code and dependencies into a Docker image and deploying it via Amazon ECR. We then exposed the function via a public Function URL to act as an API that accepts query parameters.
+To get around this, we are using Docker to package our code into a "container image." This lets us bypass those size limits and run heavy AI workloads on AWS without managing any servers. By the end of this guide, you'll have a working API link that takes a number and processes it using PyTorch.
 
-## 2. Why Container Images for PyTorch?
+## Getting Your Windows Machine Ready
 
-Size Limits: Lambda Layers are limited to 250MB (unzipped). PyTorch is far larger. Container images allow up to 10GB.
+Before we dive into the code, there are a few tools you'll need on your computer. If you already have Docker and the AWS CLI set up, you can jump straight to the next section.
 
-System Dependencies: PyTorch requires system libraries like libgomp, blas, and lapack. These are missing in standard Lambda runtimes but can be installed easily in a Docker container.
+1. Set up Docker Desktop You'll need Docker to build the container. Grab the Docker Desktop for Windows installer and run it. Once it's installed, open the app and wait a moment until you see the green "Engine Running" light in the bottom corner.
 
-Cross-Platform Consistency: Docker ensures the code runs on AWS (Linux/AMD64) exactly as it does locally, even when building from a Mac (ARM64).
+2. Install the AWS CLI This tool lets your computer talk to AWS. Download the Windows MSI installer here, run it, and click through the setup.
 
-## 3. Building the PyTorch Image (Docker Method)
+3. Connect AWS to Your Computer Now we need to log you in. Go to the AWS Console website, click your profile name in the top right, and select Security Credentials. Look for the Access Keys section and create a new key.
 
-### Step 1 — Prepare Project Files
-Ensure you have the `app.py` and `Dockerfile` from this repository in your local folder.
+Copy the Access Key ID and Secret Access Key. Then, open PowerShell on your computer and type:
 
-* **`app.py`**: Contains the Lambda handler and PyTorch inference logic.
-* **`Dockerfile`**: Defines the system environment.
+aws configure
 
-Step 2 — Build the Image (Mac/Cross-Platform Fix)
+Paste your keys when prompted. For the region, type ap-south-1.
 
-We use a specific build command to ensure compatibility with AWS Lambda (which expects AMD64 architecture and standard Docker manifests).
+## Building the Project
+First, create a folder on your Desktop named pytorch-lambda. Download the app.py and Dockerfile from this repository and place them inside that folder.
 
-### docker buildx build --platform linux/amd64 --provenance=false --load -t pytorch-lambda .
+Open PowerShell and navigate to your new folder:
 
---platform linux/amd64: Ensures it runs on AWS servers, not just Mac chips.
+cd Desktop\pytorch-lambda
 
---provenance=false: Forces the classic image format that AWS supports.
+Now comes the important part. We need to bundle everything into a Docker image. Since AWS runs on Linux servers, we use a specific command to ensure your Windows machine builds it correctly for the cloud.
 
-## 4. Upload Image to Amazon ECR
-Step 1 — Create Repository
+Run this command:
 
-Go to AWS Console → ECR → Create Repository.
+docker buildx build --platform linux/amd64 --provenance=false --load -t pytorch-lambda .
 
- Name: pytorch-lambda-api Copy the URI (e.g., 020211321234.dkr.ecr.ap-south-1.amazonaws.com/pytorch-lambda-api).
+Note: This might take a couple of minutes to download PyTorch. Just let it do its thing.
 
-Step 2 — Login and Push
-Run these commands in your terminal:
+## Uploading to AWS
 
-# 1. Login to ECR
-aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <YOUR_ACCOUNT_ID>.dkr.ecr.ap-south-1.amazonaws.com
+Once the build is done, we need to push that image up to Amazon ECR (Elastic Container Registry).
 
-# 2. Tag the image
-docker tag pytorch-lambda:latest <YOUR_ECR_URI>:latest
+Step 1: Create a Repository
 
-# 3. Push to AWS
-docker push <YOUR_ECR_URI>:latest
+ Head over to the AWS Console and search for ECR. Click Create Repository, name it pytorch-lambda-api, and hit Create. You’ll see a URI on the screen that looks something like 123456.dkr.ecr.ap-south-1.... Copy that.
 
-## 5. Create Lambda Function
-Go to AWS Console → Lambda → Create Function.
+Step 2: Push the Image Back in PowerShell, run these three commands one by one to upload your code. (Replace YOUR_URI with the one you just copied).
 
-Select Container Image .
+Login to AWS:
 
-Name: pytorch-api
+aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin YOUR_URI
 
-Container Image URI: Browse and select the image you just pushed to ECR.
+Tag your image so AWS recognizes it:
 
-Architecture: x86_64.
+docker tag pytorch-lambda:latest YOUR_URI:latest
 
-Click Create.
+Upload it to the cloud:
 
-6. Create API Endpoint (Function URL)
-Go to Configuration → Function URL.
 
-Click Create function URL.
+docker push YOUR_URI:latest
 
-Auth type: NONE (Public).
+## Creating the Lambda Function
+Now that your code is online, let's turn it into a working API.
 
-Click Save.
+Go to the AWS Console and search for Lambda. Click Create Function and select the Container Image option.
+
+Name it pytorch-api. Click the Browse Images button, select the repository you just created, and choose the image tagged latest. Be sure to set the Architecture to x86_64 so it matches our build. Finally, click Create function.
+
+## The Final Step: Making it Public
+To share this with the world, we need a public link.
+
+In your new Lambda function, go to the Configuration tab and select Function URL from the left menu. Click Create function URL, set the Auth type to NONE (this makes it public), and save it.
+
+You now have a live URL you can share with anyone!
 
 ## Output
 
